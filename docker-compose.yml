@@ -1,0 +1,52 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: sales-api-app
+    restart: unless-stopped
+    working_dir: /var/www/html
+    volumes:
+      - ./sales-api:/var/www/html
+    depends_on:
+      - db
+    networks:
+      - sales-api-network
+    entrypoint: ["sh", "/usr/local/bin/entrypoint.sh"]
+
+  db:
+    image: mysql:8.0
+    container_name: sales-api-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_DATABASE: ${DB_DATABASE}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PASSWORD}
+    ports:
+      - "3306:3306"
+    networks:
+      - sales-api-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: sales-api-nginx
+    restart: unless-stopped
+    ports:
+      - "8080:80"
+    volumes:
+      - ./sales-api:/var/www/html
+      - ./docker/nginx/:/etc/nginx/conf.d/
+    depends_on:
+      - app
+    networks:
+      - sales-api-network
+
+networks:
+  sales-api-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
